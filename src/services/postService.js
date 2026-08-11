@@ -1,25 +1,39 @@
 import { supabase } from '../lib/supabase'
 
 export const postService = {
-  // Fetch all posts ordered by created_at DESC
+  // Fetch all posts ordered by created_at DESC, with author profile info
   async getPosts() {
-    const { data, error } = await supabase
+    // Step 1: Fetch all posts
+    const { data: posts, error: postsError } = await supabase
       .from('posts')
-      .select(`
-        *,
-        profile:profiles (
-          full_name,
-          email,
-          profile_photo
-        )
-      `)
+      .select('*')
       .order('created_at', { ascending: false })
 
-    if (error) {
-      console.error('Error fetching posts:', error)
-      throw error
+    if (postsError) {
+      console.error('Error fetching posts:', postsError)
+      throw postsError
     }
-    return data
+
+    if (!posts || posts.length === 0) return []
+
+    // Step 2: Collect unique user_ids and fetch their profiles
+    const userIds = [...new Set(posts.map((p) => p.user_id))]
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, profile_photo')
+      .in('id', userIds)
+
+    // Build a lookup map
+    const profileMap = {}
+    if (profiles) {
+      profiles.forEach((p) => { profileMap[p.id] = p })
+    }
+
+    // Step 3: Attach profile to each post
+    return posts.map((post) => ({
+      ...post,
+      profile: profileMap[post.user_id] || null
+    }))
   },
 
   // Insert a new post

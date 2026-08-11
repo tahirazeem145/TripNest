@@ -25,19 +25,17 @@ export default function Profile() {
     try {
       const { data, error } = await supabase
         .from('posts')
-        .select(`
-          *,
-          profile:profiles (
-            full_name,
-            email,
-            profile_photo
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      setPosts(data || [])
+      // Attach the current user's profile (from AuthContext) to each post
+      const postsWithProfile = (data || []).map((post) => ({
+        ...post,
+        profile: profile || null
+      }))
+      setPosts(postsWithProfile)
     } catch (err) {
       console.error('Failed to load user posts:', err)
     } finally {
