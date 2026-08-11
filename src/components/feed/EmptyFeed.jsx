@@ -1,6 +1,9 @@
 import { Globe } from '../auth/Icons'
+import { useNavigate } from 'react-router-dom'
 
 export default function EmptyFeed() {
+  const navigate = useNavigate()
+
   return (
     <div className="glass-card p-12 text-center flex flex-col items-center justify-center border-slate-800/80 bg-slate-900/20 max-w-xl mx-auto py-16 animate-fade-in">
       <div className="w-16 h-16 rounded-full bg-slate-850 flex items-center justify-center mb-6 border border-slate-850 shadow-inner">
@@ -14,7 +17,7 @@ export default function EmptyFeed() {
       </p>
       
       <button 
-        onClick={() => alert('Photo sharing will be available soon.')}
+        onClick={() => navigate('/create')}
         className="btn-primary max-w-xs shadow-lg shadow-brand-500/20"
       >
         Share Your First Journey

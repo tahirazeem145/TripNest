@@ -6,6 +6,7 @@ import Home from './pages/Home'
 import Explore from './pages/Explore'
 import Saved from './pages/Saved'
 import Profile from './pages/Profile'
+import CreatePost from './pages/CreatePost'
 
 // ProtectedRoute: redirects to /login if user is not authenticated
 function ProtectedRoute({ children }) {
@@ -55,6 +56,7 @@ function AppRoutes() {
       <Route path="/explore"  element={<ProtectedRoute><Explore /></ProtectedRoute>} />
       <Route path="/saved"    element={<ProtectedRoute><Saved /></ProtectedRoute>} />
       <Route path="/profile"  element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/create"   element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/login" replace />} />

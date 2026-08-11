@@ -1,20 +1,87 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
+import { postService } from '../services/postService'
+import { storageService } from '../services/storageService'
 import Navbar from '../components/layout/Navbar'
 import Sidebar from '../components/layout/Sidebar'
 import RightSidebar from '../components/layout/RightSidebar'
 import MobileNav from '../components/layout/MobileNav'
 import FeedHeader from '../components/feed/FeedHeader'
 import FilterBar from '../components/feed/FilterBar'
+import PostCard from '../components/feed/PostCard'
 import EmptyFeed from '../components/feed/EmptyFeed'
 
 export default function Home() {
   const { user, profile } = useAuth()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
+  // Feed states
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  
+  // Filters
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('All')
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'Traveler'
+
+  // Fetch posts from database
+  async function fetchFeed() {
+    setLoading(true)
+    setError('')
+    try {
+      const data = await postService.getPosts()
+      setPosts(data || [])
+    } catch (err) {
+      console.error('Failed to load journeys:', err)
+      setError('Unable to load journeys. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchFeed()
+  }, [])
+
+  // Handle post deletion
+  async function handleDeletePost(postId, imageUrl) {
+    try {
+      // 1. Delete database record
+      await postService.deletePost(postId)
+      
+      // 2. Try to remove public image from Storage
+      await storageService.deletePhoto(imageUrl)
+      
+      // 3. Refresh local posts
+      setPosts((prevPosts) => prevPosts.filter((post) => post.id !== postId))
+    } catch (err) {
+      console.error('Failed to delete post:', err)
+      alert('Could not delete post. Please try again.')
+    }
+  }
+
+  // Filter posts dynamically in frontend
+  const filteredPosts = posts.filter((post) => {
+    // Search filter
+    const matchesSearch = 
+      post.destination.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (post.description && post.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (post.tags && post.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase())))
+
+    // Category filter mapping
+    // Since tags hold array elements like '#beach' or '#mountains'
+    const matchesCategory = 
+      activeFilter === 'All' || 
+      (post.tags && post.tags.some((tag) => 
+        tag.replace('#', '').toLowerCase() === activeFilter.toLowerCase().replace(/es$/, 's').replace(/s$/, '') ||
+        tag.replace('#', '').toLowerCase().includes(activeFilter.toLowerCase().replace(/es$/, 's').replace(/s$/, ''))
+      ))
+
+    return matchesSearch && matchesCategory
+  })
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col pb-16 lg:pb-0">
@@ -42,9 +109,27 @@ export default function Home() {
           
           <FilterBar activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
 
-          {/* Posts Feed Grid - Now completely empty state as no real database posts exist yet */}
+          {/* Posts Feed Area */}
           <div className="space-y-6">
-            <EmptyFeed />
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <div className="w-10 h-10 border-2 border-brand-400/30 border-t-brand-400 rounded-full animate-spin" />
+                <p className="text-slate-400 text-sm">Loading journeys...</p>
+              </div>
+            ) : error ? (
+              <div className="glass-card p-8 text-center border-slate-800 bg-slate-900/20 max-w-xl mx-auto py-12">
+                <p className="text-red-400 mb-4">{error}</p>
+                <button onClick={fetchFeed} className="btn-primary max-w-xs mx-auto">
+                  Retry
+                </button>
+              </div>
+            ) : filteredPosts.length > 0 ? (
+              filteredPosts.map((post) => (
+                <PostCard key={post.id} post={post} onDelete={handleDeletePost} />
+              ))
+            ) : (
+              <EmptyFeed />
+            )}
           </div>
 
         </main>
