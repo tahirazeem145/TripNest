@@ -47,7 +47,7 @@ export default function Navbar({ onMenuToggle }) {
           
           <Link to="/home" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/30">
-              <Camera className="w-4.5 h-4.5 text-white" />
+              <Camera className="w-4 h-4 text-white" />
             </div>
             <span className="font-display font-bold text-xl text-white tracking-wide">TripNest</span>
           </Link>

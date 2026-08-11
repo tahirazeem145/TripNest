@@ -6,51 +6,7 @@ import RightSidebar from '../components/layout/RightSidebar'
 import MobileNav from '../components/layout/MobileNav'
 import FeedHeader from '../components/feed/FeedHeader'
 import FilterBar from '../components/feed/FilterBar'
-import PostCard from '../components/feed/PostCard'
 import EmptyFeed from '../components/feed/EmptyFeed'
-
-// 3 Fictional/Demo Travel Posts
-const MOCK_POSTS = [
-  {
-    id: 1,
-    user: 'Arjun Kumar',
-    userInitials: 'AK',
-    location: 'Munnar, Kerala',
-    description: 'Misty mornings and endless green hills. Munnar never disappoints.',
-    tags: ['#Munnar', '#Kerala', '#Mountains'],
-    imageUrl: 'https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&q=80&w=800',
-    likes: 128,
-    comments: 24,
-    saved: 42,
-    category: 'Mountains'
-  },
-  {
-    id: 2,
-    user: 'Sarah Thomas',
-    userInitials: 'ST',
-    location: 'Goa, India',
-    description: 'Golden hour by the sea.',
-    tags: ['#Goa', '#Beach', '#Sunset'],
-    imageUrl: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=800',
-    likes: 245,
-    comments: 18,
-    saved: 89,
-    category: 'Beaches'
-  },
-  {
-    id: 3,
-    user: 'Rahul Mehta',
-    userInitials: 'RM',
-    location: 'Jaipur, Rajasthan',
-    description: 'Exploring the colors and architecture of the Pink City.',
-    tags: ['#Jaipur', '#India', '#Heritage'],
-    imageUrl: 'https://images.unsplash.com/photo-1477584305590-38772fc3333d?auto=format&fit=crop&q=80&w=800',
-    likes: 192,
-    comments: 32,
-    saved: 56,
-    category: 'Heritage'
-  }
-]
 
 export default function Home() {
   const { user, profile } = useAuth()
@@ -59,20 +15,6 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState('All')
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'Traveler'
-
-  // Filter posts based on Search and active Filter Category
-  const filteredPosts = MOCK_POSTS.filter((post) => {
-    const matchesSearch = 
-      post.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-
-    const matchesCategory = 
-      activeFilter === 'All' || 
-      post.category.toLowerCase() === activeFilter.toLowerCase()
-
-    return matchesSearch && matchesCategory
-  })
 
   return (
     <div className="min-h-screen bg-slate-950 text-white flex flex-col pb-16 lg:pb-0">
@@ -100,15 +42,9 @@ export default function Home() {
           
           <FilterBar activeFilter={activeFilter} setActiveFilter={setActiveFilter} />
 
-          {/* Posts Feed Grid */}
+          {/* Posts Feed Grid - Now completely empty state as no real database posts exist yet */}
           <div className="space-y-6">
-            {filteredPosts.length > 0 ? (
-              filteredPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
-              ))
-            ) : (
-              <EmptyFeed />
-            )}
+            <EmptyFeed />
           </div>
 
         </main>

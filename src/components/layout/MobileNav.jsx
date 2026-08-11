@@ -22,7 +22,7 @@ export default function MobileNav() {
               onClick={item.action}
               className="flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-white transition"
             >
-              <Icon className="w-5.5 h-5.5" />
+              <Icon className="w-5 h-5" />
               <span className="text-[10px] font-medium">{item.label}</span>
             </button>
           )
@@ -38,7 +38,7 @@ export default function MobileNav() {
               }`
             }
           >
-            <Icon className="w-5.5 h-5.5" />
+            <Icon className="w-5 h-5" />
             <span className="text-[10px] font-medium">{item.label}</span>
           </NavLink>
         )

@@ -7,14 +7,14 @@ export default function EmptyFeed() {
         <Globe className="w-8 h-8 text-brand-400" />
       </div>
       
-      <h2 className="text-xl font-bold text-white mb-2">Your journey starts here.</h2>
+      <h2 className="text-xl font-bold text-white mb-2">No journeys yet</h2>
       
       <p className="text-slate-400 text-sm max-w-sm mb-8 leading-relaxed">
-        Discover incredible destinations and share the moments that make your travels unforgettable.
+        Travel stories from the TripNest community will appear here. Start by sharing your first journey.
       </p>
       
       <button 
-        onClick={() => alert('Photo sharing is coming next!')}
+        onClick={() => alert('Photo sharing will be available soon.')}
         className="btn-primary max-w-xs shadow-lg shadow-brand-500/20"
       >
         Share Your First Journey
