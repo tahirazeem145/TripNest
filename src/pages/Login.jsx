@@ -1,0 +1,43 @@
+import AuthHero from '../components/common/AuthHero'
+import LoginForm from '../components/auth/LoginForm'
+
+export default function Login() {
+  return (
+    <div className="min-h-screen bg-slate-950 flex">
+      {/* ── Left hero panel (desktop only) ── */}
+      <div className="hidden lg:flex lg:w-1/2 xl:w-3/5">
+        <AuthHero
+          title={"Discover the world through\nshared moments."}
+          subtitle="Join a growing community of passionate travelers sharing authentic photos, hidden gems, and unforgettable journeys."
+        />
+      </div>
+
+      {/* ── Right form panel ── */}
+      <div className="flex-1 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-20 py-12 overflow-y-auto">
+        {/* Mobile logo */}
+        <div className="lg:hidden flex items-center gap-2 mb-10">
+          <div className="w-8 h-8 rounded-lg bg-brand-500 flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </div>
+          <span className="font-display font-bold text-xl text-white">Roamly</span>
+        </div>
+
+        <div className="w-full max-w-md mx-auto">
+          {/* Heading */}
+          <div className="mb-8 animate-fade-in">
+            <h2 className="text-3xl font-bold text-white mb-2">Welcome back</h2>
+            <p className="text-white/50 text-sm">Sign in to continue your journey</p>
+          </div>
+
+          {/* Glass card form */}
+          <div className="glass-card p-8">
+            <LoginForm />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
