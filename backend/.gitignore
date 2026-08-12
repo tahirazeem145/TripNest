@@ -1,0 +1,16 @@
+# Backend secrets — never commit!
+.env
+
+# Maven build output
+target/
+
+# IDE files
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
