@@ -12,17 +12,20 @@ export default {
       },
       colors: {
         brand: {
-          50:  '#f0f6f4',
+          50:  '#E8F0EC', // Active background
           100: '#dbece7',
           200: '#b8d6cd',
           300: '#8ab4a7',
-          450: '#2A7F73', // Secondary accent
-          500: '#164A41', // Primary Brand / Main Accent (#164A41)
-          600: '#0f3630',
+          450: '#2A7F73', // Secondary brand
+          500: '#164A41', // Primary brand
+          600: '#0F3D36', // Primary brand hover
           700: '#0b2622',
           800: '#071b18',
           900: '#04100e',
-          orange: '#E8894A' // Highlight CTA Accent
+          orange: {
+            DEFAULT: '#E8894A', // Accent / CTA
+            hover: '#D87537'
+          }
         },
         surface: {
           DEFAULT: '#FFFFFF',
