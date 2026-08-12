@@ -83,7 +83,7 @@ export default function RegisterForm() {
       <div>
         <label htmlFor="reg-name" className="form-label">Full Name</label>
         <div className="relative">
-          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A837E]" />
+          <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
             id="reg-name"
             name="fullName"
@@ -103,7 +103,7 @@ export default function RegisterForm() {
       <div>
         <label htmlFor="reg-email" className="form-label">Email address</label>
         <div className="relative">
-          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A837E]" />
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
             id="reg-email"
             name="email"
@@ -123,7 +123,7 @@ export default function RegisterForm() {
       <div>
         <label htmlFor="reg-password" className="form-label">Password</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A837E]" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
             id="reg-password"
             name="password"
@@ -139,7 +139,7 @@ export default function RegisterForm() {
           <button
             type="button"
             onClick={() => setShowPass(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7A837E] hover:text-[#17201D] transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
             aria-label={showPass ? 'Hide password' : 'Show password'}
           >
             {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -151,7 +151,7 @@ export default function RegisterForm() {
       <div>
         <label htmlFor="reg-confirm" className="form-label">Confirm Password</label>
         <div className="relative">
-          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#7A837E]" />
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
             id="reg-confirm"
             name="confirmPassword"
@@ -167,7 +167,7 @@ export default function RegisterForm() {
           <button
             type="button"
             onClick={() => setShowConf(v => !v)}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-[#7A837E] hover:text-[#17201D] transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/70 transition-colors"
             aria-label={showConf ? 'Hide password' : 'Show password'}
           >
             {showConf ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

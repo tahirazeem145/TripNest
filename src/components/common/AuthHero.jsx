@@ -14,13 +14,8 @@ export default function AuthHero({ title, subtitle }) {
       <div className="relative z-10">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center shadow-lg shadow-brand-500/40">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <span className="font-display font-bold text-2xl text-white tracking-wide">Roamly</span>
+          <img src="/TripNest_logo.png" alt="TripNest Logo" className="w-10 h-10 rounded-xl object-cover" />
+          <span className="font-display font-bold text-2xl text-white tracking-wide">TripNest</span>
         </div>
       </div>
 
@@ -49,7 +44,7 @@ export default function AuthHero({ title, subtitle }) {
       {/* Bottom tagline */}
       <div className="relative z-10">
         <p className="text-white/40 text-sm">
-          © 2025 Roamly · Discover. Share. Explore.
+          © 2026 TripNest · Discover. Share. Explore.
         </p>
       </div>
     </div>
