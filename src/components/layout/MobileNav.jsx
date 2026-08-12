@@ -10,7 +10,7 @@ export default function MobileNav() {
     { to: '/following', label: 'Following', icon: BookOpen },
     { to: '/travelers', label: 'Travelers', icon: Users },
     { to: '/notifications', label: 'Notifications', icon: Bell, isNotification: true },
-    { to: '#create', label: 'Create', icon: Camera, action: () => alert('Photo sharing is coming next!') },
+    { to: '/create', label: 'Create', icon: Camera },
     { to: '/saved', label: 'Saved', icon: Bookmark },
     { to: '/profile', label: 'Profile', icon: User },
   ]

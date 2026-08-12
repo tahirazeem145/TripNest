@@ -95,6 +95,7 @@ export default function Navbar({ onMenuToggle }) {
           <Link to="/home" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Home</Link>
           <Link to="/following" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Following</Link>
           <Link to="/travelers" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Travelers</Link>
+          <Link to="/create" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Create</Link>
           <Link to="/saved" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Saved</Link>
         </nav>
 
