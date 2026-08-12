@@ -12,20 +12,21 @@ export default {
       },
       colors: {
         brand: {
-          50:  '#f0f9ff',
-          100: '#e0f2fe',
-          200: '#bae6fd',
-          300: '#7dd3fc',
-          400: '#38bdf8',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          800: '#075985',
-          900: '#0c4a6e',
+          50:  '#f0f6f4',
+          100: '#dbece7',
+          200: '#b8d6cd',
+          300: '#8ab4a7',
+          450: '#2A7F73', // Secondary accent
+          500: '#164A41', // Primary Brand / Main Accent (#164A41)
+          600: '#0f3630',
+          700: '#0b2622',
+          800: '#071b18',
+          900: '#04100e',
+          orange: '#E8894A' // Highlight CTA Accent
         },
         surface: {
-          DEFAULT: 'rgba(255,255,255,0.08)',
-          hover:   'rgba(255,255,255,0.12)',
+          DEFAULT: '#FFFFFF',
+          hover:   '#EEF3F0',
         }
       },
       backdropBlur: {
