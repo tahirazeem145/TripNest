@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { postService } from '../services/postService'
 import { storageService } from '../services/storageService'
+import { likeService } from '../services/likeService'
+import { commentService } from '../services/commentService'
+import { savedPostService } from '../services/savedPostService'
 import Navbar from '../components/layout/Navbar'
 import Sidebar from '../components/layout/Sidebar'
 import RightSidebar from '../components/layout/RightSidebar'
@@ -20,19 +23,36 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   
+  // Like, comment, and save engagement data (batch-loaded)
+  const [likeCounts, setLikeCounts] = useState({})     // { postId: number }
+  const [userLikes, setUserLikes] = useState(new Set()) // Set of liked post IDs
+  const [commentCounts, setCommentCounts] = useState({}) // { postId: number }
+  const [userSaves, setUserSaves] = useState(new Set()) // Set of saved post IDs
+
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
   const [activeFilter, setActiveFilter] = useState('All')
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'Traveler'
 
-  // Fetch posts from database
+  // Fetch posts from database, then batch-load engagement data
   async function fetchFeed() {
     setLoading(true)
     setError('')
     try {
       const data = await postService.getPosts()
       setPosts(data || [])
+
+      // Batch-fetch likes, comments & saves for all loaded posts
+      if (data && data.length > 0) {
+        const postIds = data.map((p) => p.id)
+        await fetchEngagement(postIds)
+      } else {
+        setLikeCounts({})
+        setUserLikes(new Set())
+        setCommentCounts({})
+        setUserSaves(new Set())
+      }
     } catch (err) {
       console.error('Failed to load journeys:', err)
       setError('Unable to load journeys. Please try again.')
@@ -41,8 +61,28 @@ export default function Home() {
     }
   }
 
+  // Batch-load like counts, user-liked status, comment counts, and user-saved status
+  async function fetchEngagement(postIds) {
+    try {
+      const [likesMap, userLikedSet, commentsMap, userSavedSet] = await Promise.all([
+        likeService.getLikeCounts(postIds),
+        user ? likeService.getUserLikes(postIds, user.id) : Promise.resolve(new Set()),
+        commentService.getCommentCounts(postIds),
+        user ? savedPostService.batchGetSavedStatus(user.id, postIds) : Promise.resolve(new Set())
+      ])
+      setLikeCounts(likesMap)
+      setUserLikes(userLikedSet)
+      setCommentCounts(commentsMap)
+      setUserSaves(userSavedSet)
+    } catch (err) {
+      // Non-fatal: engagement data failed but posts still show
+      console.error('Failed to load engagement data:', err)
+    }
+  }
+
   useEffect(() => {
     fetchFeed()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Handle post deletion
@@ -125,7 +165,15 @@ export default function Home() {
               </div>
             ) : filteredPosts.length > 0 ? (
               filteredPosts.map((post) => (
-                <PostCard key={post.id} post={post} onDelete={handleDeletePost} />
+                <PostCard
+                  key={post.id}
+                  post={post}
+                  onDelete={handleDeletePost}
+                  likeCount={likeCounts[post.id] || 0}
+                  commentCount={commentCounts[post.id] || 0}
+                  hasLiked={userLikes.has(post.id)}
+                  isSaved={userSaves.has(post.id)}
+                />
               ))
             ) : (
               <EmptyFeed />

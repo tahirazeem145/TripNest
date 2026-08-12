@@ -57,3 +57,18 @@
     @apply text-green-300 bg-green-500/10 border border-green-500/30 rounded-xl px-4 py-3 text-sm;
   }
 }
+
+/* ─── Custom Scrollbar (Comment Sections) ────────────────── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.4);
+}

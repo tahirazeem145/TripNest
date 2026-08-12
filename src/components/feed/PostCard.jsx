@@ -1,10 +1,36 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { useAuth } from '../../context/AuthContext'
+import { likeService } from '../../services/likeService'
+import { savedPostService } from '../../services/savedPostService'
+import CommentSection from './CommentSection'
 
-export default function PostCard({ post, onDelete }) {
+export default function PostCard({
+  post,
+  onDelete,
+  likeCount: initialLikeCount = 0,
+  commentCount: initialCommentCount = 0,
+  hasLiked: initialHasLiked = false,
+  isSaved: initialIsSaved = false,
+  onUnsave, // Callback to instantly remove post from Saved page
+}) {
   const { user } = useAuth()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const isOwner = user && user.id === post.user_id
+
+  // Like state
+  const [liked, setLiked] = useState(initialHasLiked)
+  const [likeCount, setLikeCount] = useState(initialLikeCount)
+  const [likeLoading, setLikeLoading] = useState(false)
+  const [likeError, setLikeError] = useState('')
+
+  // Comment state
+  const [showComments, setShowComments] = useState(false)
+  const [commentCount, setCommentCount] = useState(initialCommentCount)
+
+  // Save/Bookmark state
+  const [saved, setSaved] = useState(initialIsSaved)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [saveError, setSaveError] = useState('')
 
   const displayName = post.profile?.full_name || post.profile?.email || 'Traveler'
   const initials = displayName
@@ -13,6 +39,73 @@ export default function PostCard({ post, onDelete }) {
     .join('')
     .toUpperCase()
     .slice(0, 2)
+
+  // ─── Like Handler ─────────────────────────────────────────
+  const handleLikeToggle = useCallback(async () => {
+    if (!user || likeLoading) return
+
+    setLikeLoading(true)
+    setLikeError('')
+
+    // Optimistic update
+    const wasLiked = liked
+    const prevCount = likeCount
+    setLiked(!wasLiked)
+    setLikeCount(wasLiked ? prevCount - 1 : prevCount + 1)
+
+    try {
+      if (wasLiked) {
+        await likeService.unlikePost(post.id, user.id)
+      } else {
+        await likeService.likePost(post.id, user.id)
+      }
+    } catch (err) {
+      // Rollback on failure
+      console.error('Like toggle failed:', err)
+      setLiked(wasLiked)
+      setLikeCount(prevCount)
+      setLikeError('Unable to update like. Please try again.')
+      setTimeout(() => setLikeError(''), 3000)
+    } finally {
+      setLikeLoading(false)
+    }
+  }, [user, liked, likeCount, likeLoading, post.id])
+
+  // ─── Save/Bookmark Handler ─────────────────────────────────
+  const handleSaveToggle = useCallback(async () => {
+    if (!user || saveLoading) return
+
+    setSaveLoading(true)
+    setSaveError('')
+
+    const wasSaved = saved
+    // Optimistic UI Update
+    setSaved(!wasSaved)
+
+    try {
+      if (wasSaved) {
+        await savedPostService.unsavePost(user.id, post.id)
+        if (onUnsave) {
+          onUnsave(post.id)
+        }
+      } else {
+        await savedPostService.savePost(user.id, post.id)
+      }
+    } catch (err) {
+      // Rollback
+      console.error('Save toggle failed:', err)
+      setSaved(wasSaved)
+      setSaveError(wasSaved ? 'Unable to remove this saved post. Please try again.' : 'Unable to save this post. Please try again.')
+      setTimeout(() => setSaveError(''), 3000)
+    } finally {
+      setSaveLoading(false)
+    }
+  }, [user, saved, saveLoading, post.id, onUnsave])
+
+  // ─── Comment count callback ───────────────────────────────
+  const handleCommentCountChange = useCallback((newCount) => {
+    setCommentCount(Math.max(0, newCount))
+  }, [])
 
   return (
     <article className="glass-card overflow-hidden bg-slate-900/40 border-slate-800/80 mb-6 hover:bg-slate-900/60 transition duration-300">
@@ -66,12 +159,12 @@ export default function PostCard({ post, onDelete }) {
         )}
       </div>
 
-      {/* Card Image */}
-      <div className="relative aspect-video bg-slate-950 overflow-hidden group">
+      {/* Card Image — adapts to original aspect ratio */}
+      <div className="relative bg-slate-950 overflow-hidden group">
         <img
           src={post.image_url}
           alt={post.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+          className="w-full h-auto block group-hover:scale-[1.02] transition-transform duration-700"
         />
       </div>
 
@@ -89,7 +182,7 @@ export default function PostCard({ post, onDelete }) {
 
         {/* Hashtags */}
         {post.tags && post.tags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {post.tags.map((tag) => (
               <span key={tag} className="text-xs font-semibold text-brand-400 hover:text-brand-300 cursor-pointer transition">
                 {tag}
@@ -97,7 +190,83 @@ export default function PostCard({ post, onDelete }) {
             ))}
           </div>
         )}
+
+        {/* ─── Action Bar (Like + Comment + Bookmark) ────────── */}
+        <div className="flex items-center gap-1 pt-2 border-t border-slate-800/40">
+          {/* Like Button */}
+          <button
+            id={`like-btn-${post.id}`}
+            onClick={handleLikeToggle}
+            disabled={likeLoading || !user}
+            className={`
+              flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200
+              ${liked
+                ? 'text-rose-400 hover:text-rose-300 bg-rose-500/10 hover:bg-rose-500/20'
+                : 'text-slate-400 hover:text-rose-400 hover:bg-slate-800/60'
+              }
+              disabled:opacity-40 disabled:cursor-not-allowed
+              active:scale-95
+            `}
+          >
+            <span className={`text-base transition-transform duration-200 ${liked ? 'scale-110' : ''}`}>
+              {liked ? '❤️' : '♡'}
+            </span>
+            <span>{likeCount}</span>
+          </button>
+
+          {/* Comment Button */}
+          <button
+            id={`comment-btn-${post.id}`}
+            onClick={() => setShowComments(!showComments)}
+            className={`
+              flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200
+              ${showComments
+                ? 'text-brand-400 bg-brand-500/10 hover:bg-brand-500/20'
+                : 'text-slate-400 hover:text-brand-400 hover:bg-slate-800/60'
+              }
+              active:scale-95
+            `}
+          >
+            <span className="text-base">💬</span>
+            <span>{commentCount}</span>
+          </button>
+
+          {/* Bookmark Button */}
+          <button
+            id={`save-btn-${post.id}`}
+            onClick={handleSaveToggle}
+            disabled={saveLoading || !user}
+            className={`
+              ml-auto flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200
+              ${saved
+                ? 'text-amber-400 bg-amber-500/10 hover:bg-amber-500/20'
+                : 'text-slate-400 hover:text-amber-400 hover:bg-slate-800/60'
+              }
+              disabled:opacity-40 disabled:cursor-not-allowed
+              active:scale-95
+            `}
+          >
+            <span className="text-base">🔖</span>
+            <span>{saved ? 'Saved' : 'Save'}</span>
+          </button>
+        </div>
+
+        {/* Errors display */}
+        {likeError && (
+          <p className="text-xs text-red-400 mt-1.5 animate-fade-in">{likeError}</p>
+        )}
+        {saveError && (
+          <p className="text-xs text-red-400 mt-1.5 animate-fade-in">{saveError}</p>
+        )}
       </div>
+
+      {/* ─── Comment Section (expandable) ──────────────────── */}
+      {showComments && (
+        <CommentSection
+          postId={post.id}
+          onCountChange={handleCommentCountChange}
+        />
+      )}
     </article>
   )
 }

@@ -114,3 +114,12 @@ export function X({ className = 'w-5 h-5' }) {
     </svg>
   )
 }
+
+export function Users({ className = 'w-5 h-5' }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0-.015a6 6 0 0110.743-3.48M19 9a4 4 0 110-5.292" />
+    </svg>
+  )
+}
+

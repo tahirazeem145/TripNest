@@ -1,14 +1,29 @@
+import { useState, useEffect } from 'react'
 import { NavLink } from 'react-router-dom'
-import { Globe, Camera, BookOpen, Bookmark, User, X } from '../auth/Icons'
+import { Globe, Camera, BookOpen, Bookmark, User, X, Users, Bell } from '../auth/Icons'
 
 export default function Sidebar({ isOpen, onClose }) {
+  const [unreadCount, setUnreadCount] = useState(0)
+
   const navItems = [
     { to: '/home', label: 'Home', icon: Globe },
-    { to: '/explore', label: 'Explore', icon: BookOpen },
+    { to: '/following', label: 'Following', icon: BookOpen },
+    { to: '/travelers', label: 'Travelers', icon: Users },
+    { to: '/notifications', label: 'Notifications', icon: Bell, isNotification: true },
     { to: '#create', label: 'Create', icon: Camera, action: () => alert('Photo sharing is coming next!') },
     { to: '/saved', label: 'Saved', icon: Bookmark },
     { to: '/profile', label: 'Profile', icon: User },
   ]
+
+  useEffect(() => {
+    function handleCountUpdate(e) {
+      setUnreadCount(e.detail || 0)
+    }
+    window.addEventListener('unread_notifications_count', handleCountUpdate)
+    return () => {
+      window.removeEventListener('unread_notifications_count', handleCountUpdate)
+    }
+  }, [])
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800 p-4">
@@ -46,15 +61,22 @@ export default function Sidebar({ isOpen, onClose }) {
               to={item.to}
               onClick={onClose}
               className={({ isActive }) => 
-                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl transition group ${
+                `flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition group ${
                   isActive 
                     ? 'bg-brand-500/10 text-brand-400 border border-brand-500/20' 
                     : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent'
                 }`
               }
             >
-              <Icon className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
-              <span>{item.label}</span>
+              <div className="flex items-center gap-3">
+                <Icon className="w-5 h-5 text-slate-400 group-hover:text-white transition-colors" />
+                <span>{item.label}</span>
+              </div>
+              {item.isNotification && unreadCount > 0 && (
+                <span className="bg-rose-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  {unreadCount}
+                </span>
+              )}
             </NavLink>
           )
         })}

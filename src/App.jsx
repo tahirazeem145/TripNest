@@ -3,10 +3,12 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Home from './pages/Home'
-import Explore from './pages/Explore'
-import Saved from './pages/Saved'
+import SavedPosts from './pages/SavedPosts'
 import Profile from './pages/Profile'
 import CreatePost from './pages/CreatePost'
+import Travelers from './pages/Travelers'
+import Following from './pages/Following'
+import Notifications from './pages/Notifications'
 
 // ProtectedRoute: redirects to /login if user is not authenticated
 function ProtectedRoute({ children }) {
@@ -52,11 +54,14 @@ function AppRoutes() {
       <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
       {/* Protected routes */}
-      <Route path="/home"     element={<ProtectedRoute><Home /></ProtectedRoute>} />
-      <Route path="/explore"  element={<ProtectedRoute><Explore /></ProtectedRoute>} />
-      <Route path="/saved"    element={<ProtectedRoute><Saved /></ProtectedRoute>} />
-      <Route path="/profile"  element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-      <Route path="/create"   element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+      <Route path="/home"          element={<ProtectedRoute><Home /></ProtectedRoute>} />
+      <Route path="/travelers"     element={<ProtectedRoute><Travelers /></ProtectedRoute>} />
+      <Route path="/following"     element={<ProtectedRoute><Following /></ProtectedRoute>} />
+      <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+      <Route path="/saved"         element={<ProtectedRoute><SavedPosts /></ProtectedRoute>} />
+      <Route path="/profile"       element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/profile/:userId" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+      <Route path="/create"        element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
 
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/login" replace />} />

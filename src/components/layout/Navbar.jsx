@@ -3,14 +3,51 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import Avatar from '../common/Avatar'
 import { Bell, Menu, LogOut, User, Settings, Camera } from '../auth/Icons'
+import { notificationService } from '../../services/notificationService'
 
 export default function Navbar({ onMenuToggle }) {
   const { user, profile, signOut } = useAuth()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const dropdownRef = useRef(null)
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'Traveler'
+
+  async function fetchUnreadCount() {
+    if (!user) return
+    try {
+      const count = await notificationService.getUnreadNotificationCount(user.id)
+      setUnreadCount(count)
+      // Save globally for other components to read (e.g. Sidebar, MobileNav) via window events
+      window.dispatchEvent(new CustomEvent('unread_notifications_count', { detail: count }))
+    } catch (err) {
+      console.error('Failed to get unread count:', err)
+    }
+  }
+
+  useEffect(() => {
+    fetchUnreadCount()
+
+    if (!user) return
+
+    // Realtime notifications count update
+    const channel = notificationService.subscribeToNotifications(user.id, (payload) => {
+      fetchUnreadCount()
+    })
+
+    // Listen to local read updates
+    function handleLocalReadEvent() {
+      fetchUnreadCount()
+    }
+    window.addEventListener('notifications_read', handleLocalReadEvent)
+
+    return () => {
+      if (channel) channel.unsubscribe()
+      window.removeEventListener('notifications_read', handleLocalReadEvent)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -55,17 +92,26 @@ export default function Navbar({ onMenuToggle }) {
 
         {/* Center: Desktop Quick Nav */}
         <nav className="hidden lg:flex items-center gap-1">
-          <Link to="/home" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Explore</Link>
-          <button onClick={() => alert('Photo sharing is coming next!')} className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Create</button>
+          <Link to="/home" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Home</Link>
+          <Link to="/following" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Following</Link>
+          <Link to="/travelers" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Travelers</Link>
           <Link to="/saved" className="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white rounded-lg hover:bg-slate-800 transition">Saved</Link>
         </nav>
 
         {/* Right: Notifications & User Avatar Dropdown */}
         <div className="flex items-center gap-4">
-          <button className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition relative">
+          <Link
+            to="/notifications"
+            className="p-2 text-slate-400 hover:text-white rounded-full hover:bg-slate-800 transition relative"
+            title="Notifications"
+          >
             <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-500 rounded-full"></span>
-          </button>
+            {unreadCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[10px] font-bold w-5.5 h-5.5 rounded-full flex items-center justify-center px-1 border border-slate-900 animate-pulse">
+                {unreadCount}
+              </span>
+            )}
+          </Link>
 
           {/* User Profile Dropdown */}
           <div className="relative" ref={dropdownRef}>
