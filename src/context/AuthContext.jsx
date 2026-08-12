@@ -50,7 +50,20 @@ export function AuthProvider({ children }) {
       }
     )
 
-    return () => subscription.unsubscribe()
+    // Listen for custom profile update events (e.g. from Edit Profile)
+    async function handleProfileUpdate() {
+      const session = await supabase.auth.getSession()
+      if (session?.data?.session?.user) {
+        const p = await fetchProfile(session.data.session.user.id)
+        setProfile(p)
+      }
+    }
+    window.addEventListener('profile_updated', handleProfileUpdate)
+
+    return () => {
+      subscription.unsubscribe()
+      window.removeEventListener('profile_updated', handleProfileUpdate)
+    }
   }, [])
 
   async function signOut() {

@@ -46,5 +46,62 @@ export const storageService = {
     } catch (err) {
       console.error('Failed to parse image URL for deletion:', err)
     }
+  },
+
+  // Upload a profile photo to the 'profile-photos' bucket
+  async uploadProfilePhoto(file, userId) {
+    // Validate image type (jpeg, png, webp)
+    const allowedExtensions = ['jpeg', 'jpg', 'png', 'webp']
+    const fileExt = file.name.split('.').pop().toLowerCase()
+    if (!allowedExtensions.includes(fileExt)) {
+      throw new Error('Invalid file type. Only JPEG, PNG, and WEBP are allowed.')
+    }
+
+    // Limit image size to 2MB
+    const maxSizeBytes = 2 * 1024 * 1024
+    if (file.size > maxSizeBytes) {
+      throw new Error('Image size must be less than 2MB.')
+    }
+
+    const uniqueFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExt}`
+    const filePath = `${userId}/${uniqueFileName}`
+
+    const { data, error } = await supabase.storage
+      .from('profile-photos')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      })
+
+    if (error) {
+      console.error('Error uploading profile photo:', error)
+      throw error
+    }
+
+    // Get the public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('profile-photos')
+      .getPublicUrl(filePath)
+
+    return publicUrlData.publicUrl
+  },
+
+  // Delete a profile photo from storage
+  async deleteProfilePhoto(imageUrl) {
+    try {
+      const urlParts = imageUrl.split('/profile-photos/')
+      if (urlParts.length < 2) return
+
+      const filePath = urlParts[1]
+      const { error } = await supabase.storage
+        .from('profile-photos')
+        .remove([filePath])
+
+      if (error) {
+        console.error('Error deleting profile photo from storage:', error)
+      }
+    } catch (err) {
+      console.error('Failed to parse profile image URL for deletion:', err)
+    }
   }
 }
