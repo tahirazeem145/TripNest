@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext'
 import { likeService } from '../../services/likeService'
 import { savedPostService } from '../../services/savedPostService'
 import CommentSection from './CommentSection'
+import Avatar from '../common/Avatar'
 
 export default function PostCard({
   post,
@@ -33,12 +34,6 @@ export default function PostCard({
   const [saveError, setSaveError] = useState('')
 
   const displayName = post.profile?.full_name || post.profile?.email || 'Traveler'
-  const initials = displayName
-    .split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2)
 
   // ─── Like Handler ─────────────────────────────────────────
   const handleLikeToggle = useCallback(async () => {
@@ -113,9 +108,7 @@ export default function PostCard({
       {/* Card Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-800/40">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-slate-800 flex items-center justify-center font-bold text-xs text-slate-300 border border-slate-700">
-            {initials}
-          </div>
+          <Avatar profile={post.profile} className="w-9 h-9" />
           <div>
             <h3 className="text-sm font-semibold text-white leading-none mb-1">{displayName}</h3>
             <p className="text-xs text-slate-400 font-medium flex items-center gap-1">

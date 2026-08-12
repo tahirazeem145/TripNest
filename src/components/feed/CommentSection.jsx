@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { commentService } from '../../services/commentService'
+import { supabase } from '../../lib/supabase'
+import Avatar from '../common/Avatar'
 
 const MAX_COMMENT_LENGTH = 500
 
@@ -44,11 +46,6 @@ export default function CommentSection({ postId, onCountChange }) {
   const [deletingId, setDeletingId] = useState(null)
 
   // Fetch comments on mount
-  useEffect(() => {
-    fetchComments()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [postId])
-
   async function fetchComments() {
     setLoading(true)
     setError('')
@@ -62,6 +59,64 @@ export default function CommentSection({ postId, onCountChange }) {
       setLoading(false)
     }
   }
+
+  // Fetch comments and subscribe to realtime events
+  useEffect(() => {
+    fetchComments()
+
+    // Subscribe to realtime database changes for comments on this post
+    const channel = supabase
+      .channel(`realtime-comments-${postId}-${Math.random().toString(36).substring(2, 10)}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'comments',
+          filter: `post_id=eq.${postId}`
+        },
+        async (payload) => {
+          if (payload.eventType === 'INSERT') {
+            // Verify it doesn't already exist in state (e.g. from optimistic update)
+            setComments((prev) => {
+              if (prev.some((c) => c.id === payload.new.id)) return prev
+
+              // Fetch commenter's profile to attach to the comment
+              supabase
+                .from('profiles')
+                .select('id, full_name, email, profile_photo')
+                .eq('id', payload.new.user_id)
+                .single()
+                .then(({ data: commenterProfile }) => {
+                  const newCommentWithProfile = {
+                    ...payload.new,
+                    profile: commenterProfile
+                  }
+                  setComments((current) => {
+                    if (current.some((c) => c.id === payload.new.id)) return current
+                    const updated = [...current, newCommentWithProfile]
+                    if (onCountChange) onCountChange(updated.length)
+                    return updated
+                  })
+                })
+              return prev
+            })
+          } else if (payload.eventType === 'DELETE') {
+            setComments((prev) => {
+              const updated = prev.filter((c) => c.id !== payload.old.id)
+              if (onCountChange) onCountChange(updated.length)
+              return updated
+            })
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      if (channel) channel.unsubscribe()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [postId])
 
   // ─── Add Comment ───────────────────────────────────────────
   async function handleSubmit(e) {
@@ -91,9 +146,13 @@ export default function CommentSection({ postId, onCountChange }) {
           : null
       }
 
-      setComments((prev) => [...prev, newCommentWithProfile])
+      setComments((prev) => {
+        if (prev.some((c) => c.id === inserted.id)) return prev
+        const updated = [...prev, newCommentWithProfile]
+        if (onCountChange) onCountChange(updated.length)
+        return updated
+      })
       setNewComment('')
-      if (onCountChange) onCountChange(comments.length + 1)
     } catch (err) {
       console.error('Failed to post comment:', err)
       setSubmitError('Unable to post comment. Please try again.')
@@ -141,8 +200,11 @@ export default function CommentSection({ postId, onCountChange }) {
     setDeletingId(commentId)
     try {
       await commentService.deleteComment(commentId)
-      setComments((prev) => prev.filter((c) => c.id !== commentId))
-      if (onCountChange) onCountChange(comments.length - 1)
+      setComments((prev) => {
+        const updated = prev.filter((c) => c.id !== commentId)
+        if (onCountChange) onCountChange(updated.length)
+        return updated
+      })
     } catch (err) {
       console.error('Failed to delete comment:', err)
       alert('Unable to delete comment. Please try again.')
@@ -151,23 +213,13 @@ export default function CommentSection({ postId, onCountChange }) {
     }
   }
 
-  // ─── Helpers ───────────────────────────────────────────────
-  function getInitials(displayName) {
-    return displayName
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2)
-  }
-
   // ─── Render ────────────────────────────────────────────────
   return (
     <div className="border-t border-slate-800/60 bg-slate-950/40">
       {/* Section Header */}
       <div className="px-4 pt-3 pb-2">
-        <h5 className="text-sm font-semibold text-slate-300 flex items-center gap-1.5">
-          💬 <span>Comments</span>
+        <h5 className="text-sm font-semibold text-slate-350 flex items-center gap-1.5">
+          <span>💬</span> <span>Comments</span>
         </h5>
       </div>
 
@@ -196,7 +248,6 @@ export default function CommentSection({ postId, onCountChange }) {
           <div className="space-y-3 pb-2">
             {comments.map((comment) => {
               const displayName = comment.profile?.full_name || comment.profile?.email || 'Traveler'
-              const initials = getInitials(displayName)
               const isOwner = user && user.id === comment.user_id
               const isEditing = editingId === comment.id
               const isDeleting = deletingId === comment.id
@@ -207,9 +258,7 @@ export default function CommentSection({ postId, onCountChange }) {
                   className={`group flex gap-2.5 py-2 transition-opacity ${isDeleting ? 'opacity-40 pointer-events-none' : ''}`}
                 >
                   {/* Avatar */}
-                  <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-bold text-slate-400 border border-slate-700 flex-shrink-0 mt-0.5">
-                    {initials}
-                  </div>
+                  <Avatar profile={comment.profile} className="w-7 h-7 text-[10px] mt-0.5" />
 
                   {/* Comment Body */}
                   <div className="flex-1 min-w-0">
@@ -217,7 +266,7 @@ export default function CommentSection({ postId, onCountChange }) {
                       <span className="text-xs font-semibold text-white truncate">{displayName}</span>
                       <span className="text-[10px] text-slate-500 flex-shrink-0">{timeAgo(comment.created_at)}</span>
                       {comment.updated_at !== comment.created_at && (
-                        <span className="text-[10px] text-slate-600 italic flex-shrink-0">(edited)</span>
+                        <span className="text-[10px] text-slate-650 italic flex-shrink-0">(edited)</span>
                       )}
                     </div>
 
@@ -229,7 +278,7 @@ export default function CommentSection({ postId, onCountChange }) {
                           onChange={(e) => setEditContent(e.target.value)}
                           maxLength={MAX_COMMENT_LENGTH}
                           rows={2}
-                          className="w-full text-xs text-white bg-slate-800/80 border border-slate-700 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-brand-400 resize-none"
+                          className="w-full text-xs text-white bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-white resize-none"
                         />
                         <div className="flex items-center justify-between mt-1">
                           <span className="text-[10px] text-slate-500">
@@ -239,14 +288,14 @@ export default function CommentSection({ postId, onCountChange }) {
                             <button
                               onClick={cancelEdit}
                               disabled={editSubmitting}
-                              className="text-[11px] text-slate-400 hover:text-white transition"
+                              className="text-[11px] text-slate-450 hover:text-white transition"
                             >
                               Cancel
                             </button>
                             <button
                               onClick={() => handleEditSave(comment.id)}
                               disabled={editSubmitting || !editContent.trim() || editContent.trim().length > MAX_COMMENT_LENGTH}
-                              className="text-[11px] text-brand-400 hover:text-brand-300 font-semibold transition disabled:opacity-40"
+                              className="text-[11px] text-white hover:text-slate-200 font-semibold transition disabled:opacity-40"
                             >
                               {editSubmitting ? 'Saving...' : 'Save'}
                             </button>
@@ -255,7 +304,7 @@ export default function CommentSection({ postId, onCountChange }) {
                       </div>
                     ) : (
                       /* Display Mode */
-                      <p className="text-xs text-slate-300 leading-relaxed break-words">{comment.content}</p>
+                      <p className="text-xs text-slate-350 leading-relaxed break-words">{comment.content}</p>
                     )}
 
                     {/* Owner Actions (Edit / Delete) */}
@@ -263,7 +312,7 @@ export default function CommentSection({ postId, onCountChange }) {
                       <div className="flex gap-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => startEdit(comment)}
-                          className="text-[11px] text-slate-500 hover:text-brand-400 transition"
+                          className="text-[11px] text-slate-500 hover:text-white transition"
                         >
                           Edit
                         </button>
@@ -284,7 +333,7 @@ export default function CommentSection({ postId, onCountChange }) {
       </div>
 
       {/* New Comment Input */}
-      <form onSubmit={handleSubmit} className="px-4 pb-3 pt-2 border-t border-slate-800/40">
+      <form onSubmit={handleSubmit} className="px-4 pb-3 pt-2 border-t border-slate-900">
         {submitError && (
           <p className="text-[11px] text-red-400 mb-1.5">{submitError}</p>
         )}
@@ -301,7 +350,7 @@ export default function CommentSection({ postId, onCountChange }) {
               placeholder="Write a comment..."
               maxLength={MAX_COMMENT_LENGTH}
               disabled={submitting}
-              className="w-full text-xs text-white bg-slate-800/60 border border-slate-700/80 rounded-xl px-3 py-2.5 pr-14 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-400 focus:border-transparent transition disabled:opacity-50"
+              className="w-full text-xs text-white bg-slate-900 border border-slate-800 rounded-xl px-3 py-2.5 pr-14 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-white transition disabled:opacity-50"
             />
             {newComment.length > 0 && (
               <span className={`absolute right-3 top-1/2 -translate-y-1/2 text-[10px] ${newComment.trim().length > MAX_COMMENT_LENGTH ? 'text-red-400' : 'text-slate-500'}`}>
@@ -312,10 +361,10 @@ export default function CommentSection({ postId, onCountChange }) {
           <button
             type="submit"
             disabled={submitting || !newComment.trim()}
-            className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-brand-500 hover:bg-brand-600 text-white transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            className="px-4 py-2.5 text-xs font-semibold rounded-xl bg-white text-black hover:bg-slate-200 transition disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
           >
             {submitting ? (
-              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-3.5 h-3.5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
             ) : (
               'Post'
             )}

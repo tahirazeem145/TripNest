@@ -1,9 +1,10 @@
 import { useAuth } from '../../context/AuthContext'
 
-export default function Avatar({ className = "w-10 h-10" }) {
-  const { user, profile } = useAuth()
+export default function Avatar({ className = "w-10 h-10", profile: propProfile }) {
+  const { user, profile: authProfile } = useAuth()
   
-  const displayName = profile?.full_name || user?.user_metadata?.full_name || user?.email || 'Traveler'
+  const profile = propProfile || authProfile
+  const displayName = profile?.full_name || profile?.email || user?.user_metadata?.full_name || user?.email || 'Traveler'
   const initials = displayName
     .split(' ')
     .map(n => n[0])
