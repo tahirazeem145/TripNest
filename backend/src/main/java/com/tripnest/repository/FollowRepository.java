@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -22,6 +23,9 @@ public interface FollowRepository extends JpaRepository<Follow, UUID> {
     /** All follows where this user is being followed (i.e. their followers). */
     List<Follow> findByFollowingId(UUID followingId);
 
+    /** Find specific follow relationship. */
+    Optional<Follow> findByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
+
     /** Check if followerUserId is following followingUserId. */
     boolean existsByFollowerIdAndFollowingId(UUID followerId, UUID followingId);
 
@@ -30,4 +34,10 @@ public interface FollowRepository extends JpaRepository<Follow, UUID> {
 
     /** Count how many followers a user has. */
     long countByFollowingId(UUID followingId);
+
+    /** Find following ordered by creation date descending. */
+    List<Follow> findByFollowerIdOrderByCreatedAtDesc(UUID followerId);
+
+    /** Find followers ordered by creation date descending. */
+    List<Follow> findByFollowingIdOrderByCreatedAtDesc(UUID followingId);
 }
