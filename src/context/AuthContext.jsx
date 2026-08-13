@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { logoutUser } from '../services/authService'
+import { apiClient } from '../services/apiClient'
+import { mapProfile } from '../utils/adapters'
 
 const AuthContext = createContext(null)
 
@@ -9,19 +11,16 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch the profile row from `profiles` table for a given user
+  // Fetch the profile via Spring Boot API for a given user
   async function fetchProfile(userId) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (error) {
+    try {
+      const result = await apiClient.get(`/api/profiles/${userId}`)
+      const p = result?.data ?? result
+      return mapProfile(p)
+    } catch (error) {
       console.warn('Could not fetch profile:', error.message)
       return null
     }
-    return data
   }
 
   useEffect(() => {

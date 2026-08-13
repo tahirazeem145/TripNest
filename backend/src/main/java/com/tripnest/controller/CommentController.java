@@ -21,6 +21,7 @@ import java.util.UUID;
 public class CommentController {
 
     private final CommentService commentService;
+    private final com.tripnest.security.AuthenticatedUserService authenticatedUserService;
 
     /**
      * GET /api/comments/post/{postId}
@@ -42,17 +43,18 @@ public class CommentController {
 
     /**
      * POST /api/comments
-     * Creates a comment. Accept user ID through request body.
+     * Creates a comment. Authenticated user ID overrides any client provided ID.
      */
     @PostMapping
     public ResponseEntity<CommentResponse> createComment(@Valid @RequestBody CreateCommentRequest request) {
-        CommentResponse created = commentService.createComment(request.getUserId(), request);
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        CommentResponse created = commentService.createComment(authenticatedUserId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /**
      * DELETE /api/comments/{commentId}
-     * Deletes a comment. Ownership is verified using user ID from header or query parameter.
+     * Deletes a comment. Ownership is verified using authenticated user ID.
      */
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Void> deleteComment(
@@ -60,12 +62,8 @@ public class CommentController {
             @RequestHeader(value = "X-User-Id", required = false) UUID headerUserId,
             @RequestParam(value = "userId", required = false) UUID paramUserId) {
 
-        UUID userId = (headerUserId != null) ? headerUserId : paramUserId;
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID must be supplied via 'X-User-Id' header or 'userId' parameter");
-        }
-
-        commentService.deleteComment(commentId, userId);
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        commentService.deleteComment(commentId, authenticatedUserId);
         return ResponseEntity.noContent().build();
     }
 }

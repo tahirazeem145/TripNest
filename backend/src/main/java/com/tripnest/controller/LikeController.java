@@ -22,20 +22,22 @@ import java.util.UUID;
 public class LikeController {
 
     private final LikeService likeService;
+    private final com.tripnest.security.AuthenticatedUserService authenticatedUserService;
 
     /**
      * POST /api/likes
-     * Likes a post.
+     * Likes a post. Authenticated user overrides any client-provided ID.
      */
     @PostMapping
     public ResponseEntity<LikeResponse> likePost(@Valid @RequestBody CreateLikeRequest request) {
-        LikeResponse response = likeService.likePost(request.getPostId(), request.getUserId());
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        LikeResponse response = likeService.likePost(request.getPostId(), authenticatedUserId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
      * DELETE /api/likes/{postId}
-     * Unlikes a post. User ID from X-User-Id header or query parameter.
+     * Unlikes a post. Ownership is verified using authenticated user ID.
      */
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> unlikePost(
@@ -43,12 +45,8 @@ public class LikeController {
             @RequestHeader(value = "X-User-Id", required = false) UUID headerUserId,
             @RequestParam(value = "userId", required = false) UUID paramUserId) {
 
-        UUID userId = (headerUserId != null) ? headerUserId : paramUserId;
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID must be supplied via 'X-User-Id' header or 'userId' parameter");
-        }
-
-        likeService.unlikePost(postId, userId);
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        likeService.unlikePost(postId, authenticatedUserId);
         return ResponseEntity.noContent().build();
     }
 

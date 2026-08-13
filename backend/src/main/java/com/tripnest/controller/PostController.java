@@ -22,6 +22,7 @@ import java.util.UUID;
 public class PostController {
 
     private final PostService postService;
+    private final com.tripnest.security.AuthenticatedUserService authenticatedUserService;
 
     /**
      * GET /api/posts
@@ -52,17 +53,18 @@ public class PostController {
 
     /**
      * POST /api/posts
-     * Creates a new post. Accept user ID through request body.
+     * Creates a new post. Authenticated user ID overrides any client provided ID.
      */
     @PostMapping
     public ResponseEntity<PostResponse> createPost(@Valid @RequestBody CreatePostRequest request) {
-        PostResponse created = postService.createPost(request.getUserId(), request);
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        PostResponse created = postService.createPost(authenticatedUserId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     /**
      * PUT /api/posts/{postId}
-     * Updates a post. Ownership is verified using user ID from header or query parameter.
+     * Updates a post. Ownership is verified using authenticated user ID.
      */
     @PutMapping("/{postId}")
     public ResponseEntity<PostResponse> updatePost(
@@ -71,17 +73,13 @@ public class PostController {
             @RequestParam(value = "userId", required = false) UUID paramUserId,
             @Valid @RequestBody UpdatePostRequest request) {
 
-        UUID userId = (headerUserId != null) ? headerUserId : paramUserId;
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID must be supplied via 'X-User-Id' header or 'userId' parameter");
-        }
-
-        return ResponseEntity.ok(postService.updatePost(postId, userId, request));
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        return ResponseEntity.ok(postService.updatePost(postId, authenticatedUserId, request));
     }
 
     /**
      * DELETE /api/posts/{postId}
-     * Deletes a post. Ownership is verified using user ID from header or query parameter.
+     * Deletes a post. Ownership is verified using authenticated user ID.
      */
     @DeleteMapping("/{postId}")
     public ResponseEntity<Void> deletePost(
@@ -89,12 +87,8 @@ public class PostController {
             @RequestHeader(value = "X-User-Id", required = false) UUID headerUserId,
             @RequestParam(value = "userId", required = false) UUID paramUserId) {
 
-        UUID userId = (headerUserId != null) ? headerUserId : paramUserId;
-        if (userId == null) {
-            throw new IllegalArgumentException("User ID must be supplied via 'X-User-Id' header or 'userId' parameter");
-        }
-
-        postService.deletePost(postId, userId);
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        postService.deletePost(postId, authenticatedUserId);
         return ResponseEntity.noContent().build();
     }
 }

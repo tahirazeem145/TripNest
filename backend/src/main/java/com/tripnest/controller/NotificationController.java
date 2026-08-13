@@ -19,6 +19,7 @@ import java.util.UUID;
 public class NotificationController {
 
     private final NotificationService notificationService;
+    private final com.tripnest.security.AuthenticatedUserService authenticatedUserService;
 
     /**
      * GET /api/notifications/user/{userId}
@@ -26,6 +27,11 @@ public class NotificationController {
      */
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<NotificationResponse>> getNotifications(@PathVariable UUID userId) {
+        // Enforce ownership: only authenticated user can view their notifications
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        if (!authenticatedUserId.equals(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot view another user's notifications");
+        }
         return ResponseEntity.ok(notificationService.getNotificationsByUserId(userId));
     }
 
@@ -35,6 +41,11 @@ public class NotificationController {
      */
     @GetMapping("/user/{userId}/unread-count")
     public ResponseEntity<UnreadNotificationCountResponse> getUnreadCount(@PathVariable UUID userId) {
+        // Enforce ownership
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        if (!authenticatedUserId.equals(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot view another user's notifications");
+        }
         return ResponseEntity.ok(notificationService.getUnreadNotificationCount(userId));
     }
 
@@ -45,8 +56,9 @@ public class NotificationController {
     @PutMapping("/{notificationId}/read")
     public ResponseEntity<Void> markAsRead(
             @PathVariable UUID notificationId,
-            @RequestParam UUID userId) {
-        notificationService.markAsRead(notificationId, userId);
+            @RequestParam(required = false) UUID userId) {
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        notificationService.markAsRead(notificationId, authenticatedUserId);
         return ResponseEntity.ok().build();
     }
 
@@ -56,6 +68,10 @@ public class NotificationController {
      */
     @PutMapping("/user/{userId}/read-all")
     public ResponseEntity<Void> markAllAsRead(@PathVariable UUID userId) {
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        if (!authenticatedUserId.equals(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot mark another user's notifications as read");
+        }
         notificationService.markAllAsRead(userId);
         return ResponseEntity.ok().build();
     }
@@ -67,8 +83,9 @@ public class NotificationController {
     @DeleteMapping("/{notificationId}")
     public ResponseEntity<Void> deleteNotification(
             @PathVariable UUID notificationId,
-            @RequestParam UUID userId) {
-        notificationService.deleteNotification(notificationId, userId);
+            @RequestParam(required = false) UUID userId) {
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        notificationService.deleteNotification(notificationId, authenticatedUserId);
         return ResponseEntity.noContent().build();
     }
 }

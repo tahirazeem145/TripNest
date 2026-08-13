@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabase'
+import { profileService } from '../services/profileService'
 import Navbar from '../components/layout/Navbar'
 import Sidebar from '../components/layout/Sidebar'
 import RightSidebar from '../components/layout/RightSidebar'
@@ -19,12 +19,8 @@ export default function Travelers() {
     setLoading(true)
     setError('')
     try {
-      // Fetch all user profiles
-      const { data, error: fetchError } = await supabase
-        .from('profiles')
-        .select('*')
-
-      if (fetchError) throw fetchError
+      // Fetch all user profiles via Spring Boot API
+      const data = await profileService.getProfiles()
 
       // Exclude logged in user
       const filtered = (data || []).filter((profile) => profile.id !== user?.id)

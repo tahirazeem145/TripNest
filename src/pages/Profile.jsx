@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { supabase } from '../lib/supabase'
+import { profileService } from '../services/profileService'
 import { storageService } from '../services/storageService'
 import { postService } from '../services/postService'
 import { followService } from '../services/followService'
@@ -67,13 +67,7 @@ export default function Profile() {
     if (!activeUserId) return
     setProfileLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', activeUserId)
-        .single()
-
-      if (error) throw error
+      const data = await profileService.getProfile(activeUserId)
       setProfileUser(data)
     } catch (err) {
       console.error('Failed to load profile user details:', err)
@@ -102,13 +96,8 @@ export default function Profile() {
     if (!activeUserId) return
     setPostsLoading(true)
     try {
-      const { data, error } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('user_id', activeUserId)
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
+      const result = await postService.getPostsByUser(activeUserId)
+      const data = result?.data ?? result ?? []
 
       const postsWithProfile = (data || []).map((post) => ({
         ...post,
@@ -249,18 +238,13 @@ export default function Profile() {
         finalPhotoUrl = uploadedUrl
       }
 
-      // Update public.profiles table
-      const { error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: editName,
-          bio: editBio,
-          travel_interests: editInterests,
-          profile_photo: finalPhotoUrl
-        })
-        .eq('id', user.id)
-
-      if (error) throw error
+      // Update profile
+      await profileService.updateProfile(user.id, {
+        full_name: editName,
+        bio: editBio,
+        travel_interests: editInterests,
+        profile_photo: finalPhotoUrl
+      })
 
       // Refresh data
       await fetchProfileData()

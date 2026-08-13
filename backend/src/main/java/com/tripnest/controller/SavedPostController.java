@@ -24,27 +24,30 @@ import java.util.UUID;
 public class SavedPostController {
 
     private final SavedPostService savedPostService;
+    private final com.tripnest.security.AuthenticatedUserService authenticatedUserService;
 
     /**
      * POST /api/saved-posts
-     * Creates a saved-post relationship.
+     * Creates a saved-post relationship. Authenticated user ID overrides client ID.
      */
     @PostMapping
     public ResponseEntity<SavedPostResponse> savePost(@Valid @RequestBody CreateSavedPostRequest request) {
-        SavedPostResponse response = savedPostService.savePost(request.getUserId(), request.getPostId());
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        SavedPostResponse response = savedPostService.savePost(authenticatedUserId, request.getPostId());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
      * DELETE /api/saved-posts
-     * Unsaves a post.
+     * Unsaves a post. Authenticated user ID overrides userId parameter.
      * Expects parameters: ?userId=...&postId=...
      */
     @DeleteMapping
     public ResponseEntity<Void> unsavePost(
-            @RequestParam UUID userId,
+            @RequestParam(required = false) UUID userId, // Kept for backwards compatibility but ignored
             @RequestParam UUID postId) {
-        savedPostService.unsavePost(userId, postId);
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        savedPostService.unsavePost(authenticatedUserId, postId);
         return ResponseEntity.noContent().build();
     }
 

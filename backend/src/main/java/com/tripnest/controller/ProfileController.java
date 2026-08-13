@@ -21,6 +21,7 @@ import java.util.UUID;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final com.tripnest.security.AuthenticatedUserService authenticatedUserService;
 
     /**
      * GET /api/profiles
@@ -57,6 +58,12 @@ public class ProfileController {
     public ResponseEntity<ProfileResponse> updateProfile(
             @PathVariable UUID userId,
             @Valid @RequestBody UpdateProfileRequest request) {
+        
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        if (!authenticatedUserId.equals(userId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Cannot update another user's profile");
+        }
+        
         return ResponseEntity.ok(profileService.updateProfile(userId, request));
     }
 }

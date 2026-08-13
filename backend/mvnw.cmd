@@ -1,3 +1,4 @@
+@echo off
 @REM ----------------------------------------------------------------------------
 @REM Licensed to the Apache Software Foundation (ASF) under one
 @REM or more contributor license agreements.  See the NOTICE file
@@ -62,13 +63,7 @@ SET MAVEN_OPTS_TEMP=
     @SET /P DISTRIBUTION_URL=< "%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.properties"
 )
 
-@"%MAVEN_JAVA_EXE%" ^
-  %JVM_CONFIG_MAVEN_PROPS% ^
-  %MAVEN_OPTS% ^
-  %MAVEN_DEBUG_OPTS% ^
-  -classpath %WRAPPER_JAR% ^
-  "-Dmaven.multiModuleProjectDirectory=%MAVEN_PROJECTBASEDIR%" ^
-  %WRAPPER_LAUNCHER% %MAVEN_CONFIG% %*
+@"%MAVEN_JAVA_EXE%" %JVM_CONFIG_MAVEN_PROPS% %MAVEN_OPTS% %MAVEN_DEBUG_OPTS% -classpath %WRAPPER_JAR% "-Dmaven.multiModuleProjectDirectory=%MAVEN_PROJECTBASEDIR%." %WRAPPER_LAUNCHER% %MAVEN_CONFIG% %*
 
 @IF "%ERRORLEVEL%"=="0" GOTO end
 @SET ERROR_CODE=%ERRORLEVEL%

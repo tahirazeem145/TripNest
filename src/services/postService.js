@@ -1,65 +1,39 @@
-import { supabase } from '../lib/supabase'
+import { apiClient } from './apiClient'
+import { mapPost } from '../utils/adapters'
 
 export const postService = {
-  // Fetch all posts ordered by created_at DESC, with author profile info
+  // Fetch all posts
   async getPosts() {
-    // Step 1: Fetch all posts
-    const { data: posts, error: postsError } = await supabase
-      .from('posts')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (postsError) {
-      console.error('Error fetching posts:', postsError)
-      throw postsError
-    }
-
-    if (!posts || posts.length === 0) return []
-
-    // Step 2: Collect unique user_ids and fetch their profiles
-    const userIds = [...new Set(posts.map((p) => p.user_id))]
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, profile_photo')
-      .in('id', userIds)
-
-    // Build a lookup map
-    const profileMap = {}
-    if (profiles) {
-      profiles.forEach((p) => { profileMap[p.id] = p })
-    }
-
-    // Step 3: Attach profile to each post
-    return posts.map((post) => ({
-      ...post,
-      profile: profileMap[post.user_id] || null
-    }))
+    const data = await apiClient.get('/api/posts')
+    return data ? data.map(mapPost) : []
   },
 
-  // Insert a new post
+  // Fetch a single post by ID
+  async getPost(postId) {
+    const data = await apiClient.get(`/api/posts/${postId}`)
+    return mapPost(data)
+  },
+
+  // Fetch posts for a specific user (userId derived from JWT if not provided)
+  async getPostsByUser(userId) {
+    const data = await apiClient.get(`/api/posts/user/${userId}`)
+    return data ? data.map(mapPost) : []
+  },
+
+  // Create a new post (payload without userId; backend derives from JWT)
   async createPost(postData) {
-    const { data, error } = await supabase
-      .from('posts')
-      .insert([postData])
-      .select()
-
-    if (error) {
-      console.error('Error creating post:', error)
-      throw error
-    }
-    return data[0]
+    const data = await apiClient.post('/api/posts', postData)
+    return mapPost(data)
   },
 
-  // Delete a post by ID
-  async deletePost(postId) {
-    const { error } = await supabase
-      .from('posts')
-      .delete()
-      .eq('id', postId)
+  // Update an existing post
+  async updatePost(postId, postData) {
+    const data = await apiClient.put(`/api/posts/${postId}`, postData)
+    return mapPost(data)
+  },
 
-    if (error) {
-      console.error('Error deleting post:', error)
-      throw error
-    }
+  // Delete a post
+  async deletePost(postId) {
+    return await apiClient.delete(`/api/posts/${postId}`)
   }
 }

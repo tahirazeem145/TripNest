@@ -1,143 +1,50 @@
-import { supabase } from '../lib/supabase'
+import { apiClient } from './apiClient'
 
 export const savedPostService = {
   /**
-   * Save a post
+   * Save a post (authenticated user is derived from JWT).
    */
   async savePost(userId, postId) {
-    const { error } = await supabase
-      .from('saved_posts')
-      .insert({ user_id: userId, post_id: postId })
-
-    if (error) {
-      console.error('Error saving post:', error)
-      throw error
-    }
+    // Backend overrides userId, only postId is required.
+    await apiClient.post('/api/saved-posts', { postId })
   },
 
   /**
-   * Unsave a post
+   * Unsave a post.
    */
   async unsavePost(userId, postId) {
-    const { error } = await supabase
-      .from('saved_posts')
-      .delete()
-      .eq('user_id', userId)
-      .eq('post_id', postId)
-
-    if (error) {
-      console.error('Error unsaving post:', error)
-      throw error
-    }
+    await apiClient.delete(`/api/saved-posts?postId=${postId}`)
   },
 
   /**
-   * Check if a single post is saved by the user
+   * Check if a single post is saved by the user.
    */
   async isPostSaved(userId, postId) {
     if (!userId || !postId) return false
-    const { data, error } = await supabase
-      .from('saved_posts')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('post_id', postId)
-      .maybeSingle()
-
-    if (error) {
-      console.error('Error checking saved status:', error)
-      throw error
-    }
-    return !!data
+    const result = await apiClient.get(`/api/saved-posts/check/${postId}/${userId}`)
+    // Backend returns { saved: true/false }
+    return result?.saved ?? false
   },
 
   /**
-   * Batch check which posts from a given list are saved by the user.
-   * Returns a Set of post IDs.
+   * Batch check which posts from a list are saved by the user.
+   * Since the backend lacks a batch endpoint, we call the single check for each ID.
+   * Returns a Set of saved post IDs.
    */
   async batchGetSavedStatus(userId, postIds) {
     if (!userId || !postIds || postIds.length === 0) return new Set()
-    
-    const { data, error } = await supabase
-      .from('saved_posts')
-      .select('post_id')
-      .eq('user_id', userId)
-      .in('post_id', postIds)
-
-    if (error) {
-      console.error('Error batch checking saved status:', error)
-      throw error
-    }
-
-    return new Set((data || []).map((row) => row.post_id))
+    const checks = await Promise.all(
+      postIds.map((postId) => this.isPostSaved(userId, postId).then((saved) => ({ postId, saved })))
+    )
+    return new Set(checks.filter((c) => c.saved).map((c) => c.postId))
   },
 
   /**
-   * Get all posts saved by the user.
-   * Leverages safe two-step profile lookup.
+   * Get all posts saved by the user (includes post data and author profile).
    */
   async getSavedPosts(userId) {
     if (!userId) return []
-
-    // 1. Fetch saved_posts list sorted by saved timestamp
-    const { data: savedRecords, error: savedError } = await supabase
-      .from('saved_posts')
-      .select('post_id, created_at')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-
-    if (savedError) {
-      console.error('Error fetching saved posts records:', savedError)
-      throw savedError
-    }
-
-    if (!savedRecords || savedRecords.length === 0) return []
-
-    // 2. Fetch corresponding posts using IN filter
-    const postIds = savedRecords.map((r) => r.post_id)
-    const { data: posts, error: postsError } = await supabase
-      .from('posts')
-      .select('*')
-      .in('id', postIds)
-
-    if (postsError) {
-      console.error('Error fetching posts for saved feed:', postsError)
-      throw postsError
-    }
-
-    if (!posts || posts.length === 0) return []
-
-    // 3. Batch-fetch profile records for author mappings (safe 2-step approach)
-    const authorIds = [...new Set(posts.map((p) => p.user_id))]
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('id, full_name, email, profile_photo')
-      .in('id', authorIds)
-
-    if (profilesError) {
-      console.error('Error fetching profiles for saved feed:', profilesError)
-    }
-
-    const profileMap = {}
-    if (profiles) {
-      profiles.forEach((p) => {
-        profileMap[p.id] = p
-      })
-    }
-
-    // Map profiles to posts
-    const postsWithProfiles = posts.map((post) => ({
-      ...post,
-      profile: profileMap[post.user_id] || null,
-    }))
-
-    // 4. Map them back to the original order of savedRecords (newest saved first)
-    const postMap = {}
-    postsWithProfiles.forEach((p) => {
-      postMap[p.id] = p
-    })
-
-    return savedRecords
-      .map((record) => postMap[record.post_id])
-      .filter(Boolean) // Filter out any posts that might have been deleted since saving
+    // Backend returns array of SavedPostWithPostResponse objects.
+    return await apiClient.get(`/api/saved-posts/user/${userId}`)
   }
 }

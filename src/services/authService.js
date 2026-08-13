@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase'
+import { apiClient } from './apiClient'
 
 /**
  * Register a new user with email/password.
@@ -19,20 +20,12 @@ export async function registerUser(fullName, email, password) {
   const user = authData.user
   if (!user) throw new Error('Registration failed. Please try again.')
 
-  // 2. Insert profile row (RLS: only the owner can insert their own row)
-  const { error: profileError } = await supabase.from('profiles').insert({
-    id: user.id,
-    full_name: fullName,
-    email: email,
-    role: 'USER',
-  })
+  // 2. Fetch the newly created profile via Spring Boot API (trigger already created it)
+  const profile = await apiClient.get(`/api/profiles/${user.id}`)
 
-  if (profileError) {
-    // Non-fatal: profile may already exist if email confirmation is disabled
-    console.warn('Profile insert warning:', profileError.message)
-  }
+  // No error handling needed; profile fetch will throw if fails
 
-  return authData
+  return { authData, profile }
 }
 
 /**

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { commentService } from '../../services/commentService'
+import { profileService } from '../../services/profileService'
 import { supabase } from '../../lib/supabase'
 import Avatar from '../common/Avatar'
 
@@ -81,20 +82,12 @@ export default function CommentSection({ postId, onCountChange }) {
             setComments((prev) => {
               if (prev.some((c) => c.id === payload.new.id)) return prev
 
-              // Fetch commenter's profile to attach to the comment
-              supabase
-                .from('profiles')
-                .select('id, full_name, email, profile_photo')
-                .eq('id', payload.new.user_id)
-                .single()
-                .then(({ data: commenterProfile }) => {
-                  const newCommentWithProfile = {
-                    ...payload.new,
-                    profile: commenterProfile
-                  }
-                  setComments((current) => {
-                    if (current.some((c) => c.id === payload.new.id)) return current
-                    const updated = [...current, newCommentWithProfile]
+              // Fetch commenter's profile via Spring Boot API
+              profileService.getProfile(payload.new.user_id)
+                .then(profile => {
+                  setComments(prev => {
+                    if (prev.some((c) => c.id === payload.new.id)) return prev
+                    const updated = [...prev, { ...payload.new, profile }]
                     if (onCountChange) onCountChange(updated.length)
                     return updated
                   })

@@ -1,82 +1,40 @@
-import { supabase } from '../lib/supabase'
+import { apiClient } from './apiClient'
+
+// likeService primarily returns boolean, counts, or status objects which don't map directly to DTOs in a way that requires translation to snake_case.
+// For the most part, the frontend expects `counts` or `likes`.
+// Let's ensure the methods are correctly matching what the frontend components expect.
 
 export const likeService = {
   /**
-   * Batch-fetch like counts for an array of post IDs.
-   * Returns a map: { postId: count }
+   * Batch get like counts for multiple posts.
    */
   async getLikeCounts(postIds) {
     if (!postIds || postIds.length === 0) return {}
-
-    const { data, error } = await supabase
-      .from('likes')
-      .select('post_id')
-      .in('post_id', postIds)
-
-    if (error) {
-      console.error('Error fetching like counts:', error)
-      throw error
-    }
-
-    // Count occurrences per post_id
-    const counts = {}
-    postIds.forEach((id) => { counts[id] = 0 })
-    if (data) {
-      data.forEach((row) => {
-        counts[row.post_id] = (counts[row.post_id] || 0) + 1
-      })
-    }
-    return counts
+    return await apiClient.get(`/api/likes/counts?postIds=${postIds.join(',')}`)
   },
 
   /**
-   * Batch-check which posts the current user has liked.
-   * Returns a Set of post IDs the user has liked.
+   * Batch get which posts the user has liked from a list of postIds.
    */
   async getUserLikes(postIds, userId) {
     if (!postIds || postIds.length === 0 || !userId) return new Set()
-
-    const { data, error } = await supabase
-      .from('likes')
-      .select('post_id')
-      .in('post_id', postIds)
-      .eq('user_id', userId)
-
-    if (error) {
-      console.error('Error fetching user likes:', error)
-      throw error
-    }
-
-    return new Set((data || []).map((row) => row.post_id))
+    const result = await apiClient.get(`/api/likes/user?postIds=${postIds.join(',')}`)
+    // Result is likely an array of post IDs the user liked
+    return new Set(result || [])
   },
 
   /**
-   * Like a post. Inserts a row into the likes table.
+   * Like a post.
    */
-  async likePost(postId, userId) {
-    const { error } = await supabase
-      .from('likes')
-      .insert({ post_id: postId, user_id: userId })
-
-    if (error) {
-      console.error('Error liking post:', error)
-      throw error
-    }
+  async likePost(postId) {
+    // We don't send userId, backend uses JWT
+    return await apiClient.post('/api/likes', { postId })
   },
 
   /**
-   * Unlike a post. Deletes the user's like row for that post.
+   * Unlike a post.
    */
-  async unlikePost(postId, userId) {
-    const { error } = await supabase
-      .from('likes')
-      .delete()
-      .eq('post_id', postId)
-      .eq('user_id', userId)
-
-    if (error) {
-      console.error('Error unliking post:', error)
-      throw error
-    }
+  async unlikePost(postId) {
+    return await apiClient.delete(`/api/likes/${postId}`)
   }
 }

@@ -24,28 +24,31 @@ import java.util.UUID;
 public class FollowController {
 
     private final FollowService followService;
+    private final com.tripnest.security.AuthenticatedUserService authenticatedUserService;
 
     /**
      * POST /api/follows
-     * Creates a follow relationship.
+     * Creates a follow relationship. Authenticated user ID overrides followerId.
      */
     @PostMapping
     public ResponseEntity<FollowResponse> followUser(@Valid @RequestBody CreateFollowRequest request) {
-        FollowResponse response = followService.followUser(request.getFollowerId(), request.getFollowingId());
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        FollowResponse response = followService.followUser(authenticatedUserId, request.getFollowingId());
         // Use 200 OK or 201 Created. Using 201 here.
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     /**
      * DELETE /api/follows
-     * Unfollows a user.
+     * Unfollows a user. Authenticated user ID overrides followerId.
      * Expects parameters: ?followerId=...&followingId=...
      */
     @DeleteMapping
     public ResponseEntity<Void> unfollowUser(
-            @RequestParam UUID followerId,
+            @RequestParam(required = false) UUID followerId, // Kept for backwards compatibility but ignored
             @RequestParam UUID followingId) {
-        followService.unfollowUser(followerId, followingId);
+        UUID authenticatedUserId = authenticatedUserService.getCurrentUserId();
+        followService.unfollowUser(authenticatedUserId, followingId);
         return ResponseEntity.noContent().build();
     }
 

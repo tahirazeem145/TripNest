@@ -6,7 +6,7 @@ import { followService } from '../services/followService'
 import { likeService } from '../services/likeService'
 import { commentService } from '../services/commentService'
 import { savedPostService } from '../services/savedPostService'
-import { supabase } from '../lib/supabase'
+import { profileService } from '../services/profileService'
 import Navbar from '../components/layout/Navbar'
 import Sidebar from '../components/layout/Sidebar'
 import RightSidebar from '../components/layout/RightSidebar'
@@ -31,7 +31,7 @@ export default function Following() {
     setLoading(true)
     setError('')
     try {
-      // 1. Get the following IDs
+      // 1. Get the following IDs via Spring Boot API
       const followingIds = await followService.getFollowingIds(user.id)
 
       if (followingIds.length === 0) {
@@ -40,38 +40,35 @@ export default function Following() {
         return
       }
 
-      // 2. Fetch posts belonging to followed users
-      const { data: rawPosts, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .in('user_id', followingIds)
-        .order('created_at', { ascending: false })
+      // 2. Fetch posts for each followed user via Spring Boot API (/api/posts/user/{userId})
+      const allPostArrays = await Promise.all(
+        followingIds.map((uid) => postService.getPostsByUser(uid))
+      )
+      const rawPosts = allPostArrays.flat().sort(
+        (a, b) => new Date(b.createdAt ?? b.created_at) - new Date(a.createdAt ?? a.created_at)
+      )
 
-      if (postsError) throw postsError
-
-      if (!rawPosts || rawPosts.length === 0) {
+      if (rawPosts.length === 0) {
         setPosts([])
         setLoading(false)
         return
       }
 
-      // 3. Batch-fetch profile records for author mappings (safe 2-step approach)
+      // 3. Fetch profile for each unique author via Spring Boot API (/api/profiles/{userId})
       const userIds = [...new Set(rawPosts.map((p) => p.user_id))]
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email, profile_photo')
-        .in('id', userIds)
-
+      const profileResults = await Promise.all(
+        userIds.map((uid) =>
+          profileService.getProfile(uid).catch(() => null)
+        )
+      )
       const profileMap = {}
-      if (profiles) {
-        profiles.forEach((p) => {
-          profileMap[p.id] = p
-        })
-      }
+      profileResults.forEach((p) => {
+        if (p) profileMap[p.id] = p
+      })
 
       const postsWithProfiles = rawPosts.map((post) => ({
         ...post,
-        profile: profileMap[post.user_id] || null,
+        profile: post.profile || profileMap[post.user_id] || null,
       }))
 
       setPosts(postsWithProfiles)
