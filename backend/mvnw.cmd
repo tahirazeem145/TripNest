@@ -55,7 +55,7 @@ FOR /F "usebackq tokens=1,2 delims==" %%A IN ("%MAVEN_PROJECTBASEDIR%\.mvn\wrapp
     @IF "%MVNW_VERBOSE%"=="true" @ECHO Finished downloading %WRAPPER_JAR%
 )
 
-@SET MAVEN_JAVA_EXE="%JAVA_HOME%/bin/java.exe"
+@SET MAVEN_JAVA_EXE=%JAVA_HOME:"=%\bin\java.exe
 SET MAVEN_OPTS_TEMP=
 @FINDSTR /b "distributionUrl" "%MAVEN_PROJECTBASEDIR%\.mvn\wrapper\maven-wrapper.properties" > nul 2>&1
 @IF NOT ERRORLEVEL 1 (

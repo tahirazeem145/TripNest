@@ -88,6 +88,13 @@
             <version>3.0.0</version>
         </dependency>
 
+        <!-- Hypersistence Utils — PostgreSQL array type support (TEXT[], UUID[], etc.) -->
+        <dependency>
+            <groupId>io.hypersistence</groupId>
+            <artifactId>hypersistence-utils-hibernate-63</artifactId>
+            <version>3.8.3</version>
+        </dependency>
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
