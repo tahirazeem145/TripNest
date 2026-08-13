@@ -26,6 +26,9 @@ public interface LikeRepository extends JpaRepository<Like, UUID> {
     /** Count total likes on a given post. */
     long countByPostId(UUID postId);
 
+    /** Find all likes on a post ordered by creation date ascending. */
+    List<Like> findByPostIdOrderByCreatedAtAsc(UUID postId);
+
     /** All likes by a specific user (for batch operations). */
     List<Like> findByUserIdAndPostIdIn(UUID userId, List<UUID> postIds);
 }
