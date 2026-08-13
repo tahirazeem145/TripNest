@@ -28,4 +28,7 @@ public interface SavedPostRepository extends JpaRepository<SavedPost, UUID> {
 
     /** All saved-post records for a given set of post IDs (batch status check). */
     List<SavedPost> findByUserIdAndPostIdIn(UUID userId, List<UUID> postIds);
+
+    /** Count the number of saved posts for a given user. */
+    long countByUserId(UUID userId);
 }

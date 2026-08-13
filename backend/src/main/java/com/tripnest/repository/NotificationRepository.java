@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -28,4 +29,12 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     /** All unread notifications for a user (for bulk mark-as-read). */
     List<Notification> findByRecipientIdAndIsReadFalse(UUID recipientId);
+
+    /** Find a specific notification verifying ownership. */
+    Optional<Notification> findByIdAndRecipientId(UUID id, UUID recipientId);
+
+    /** Bulk update all unread notifications to read for a specific user. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("UPDATE Notification n SET n.isRead = true WHERE n.recipientId = :recipientId AND n.isRead = false")
+    int markAllAsRead(@org.springframework.data.repository.query.Param("recipientId") UUID recipientId);
 }

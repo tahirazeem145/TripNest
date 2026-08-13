@@ -24,4 +24,7 @@ public interface PostRepository extends JpaRepository<Post, UUID> {
 
     /** Count posts by a specific user (used for profile stats). */
     long countByUserId(UUID userId);
+
+    /** Batch retrieve posts by a list of IDs. */
+    List<Post> findAllByIdIn(List<UUID> postIds);
 }
